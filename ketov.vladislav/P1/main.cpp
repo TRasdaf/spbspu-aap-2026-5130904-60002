@@ -1,65 +1,118 @@
 #include <iostream>
 #include <limits>
 
+const int code0 = 0;
+const int code1 = 1;
+const int code2 = 2;
+
+namespace ketov {
+
+  class Counter {
+  private:
+    size_t len_ = 0;
+
+  public:
+    void operator()(int)
+    {
+      ++len_;
+    }
+
+    size_t operator()() const
+    {
+      return len_;
+    }
+  };
+
+  class SubMax {
+  private:
+    int max1_ = std::numeric_limits< int >::min();
+    int max2_ = std::numeric_limits< int >::min();
+    Counter counter_;
+
+  public:
+    void operator()(int n)
+    {
+      counter_(n);
+      if (n > max1_) {
+        max2_ = max1_;
+        max1_ = n;
+      } else if (n > max2_ && n < max1_) {
+        max2_ = n;
+      }
+    }
+
+    int operator()() const
+    {
+      if (counter_() < 2) {
+        throw std::invalid_argument("Should be 2 or more arguments");
+      }
+      return max2_;
+    }
+  };
+
+  class SumDup {
+  private:
+    int last1_ = 0;
+    int last2_ = 0;
+    Counter counter_;
+    int matches_ = 0;
+
+  public:
+    void operator()(int n)
+    {
+      int cnt = counter_();
+      counter_(n);
+
+      if (cnt == 0) {
+        last2_ = n;
+      } else if (cnt == 1) {
+        last1_ = n;
+      } else {
+        if (n == last1_ + last2_) {
+          matches_++;
+        }
+        last2_ = last1_;
+        last1_ = n;
+      }
+    }
+
+    int operator()() const
+    {
+      if (counter_() < 3) {
+        throw std::invalid_argument("Should be 3 or more arguments");
+      }
+      return matches_;
+    }
+  };
+
+} // namespace ketov
+
 int main()
 {
-  const int calcualtion_error = 2;
-  const int input_error_code = 1;
-  const int for_chk = 2;
-  int n = 1;
-  int cnt = 0;
-  int chk = for_chk;
-  bool findzero = false;
-  int max1 = std::numeric_limits< int >::min();
-  int max2 = std::numeric_limits< int >::min();
-  int v1 = 0;
-  int v2 = 0;
-  std::cin >> v1;
-  if (v1 == 0) {
-    std::cerr << "Too short\n";
-    return calcualtion_error;
-  }
-  std::cin >> v2;
-  if (v2 == 0) {
-    std::cerr << "Too short\n";
-    return calcualtion_error;
-  }
-  while (std::cin >> n) {
-    if (n == 0) {
-      findzero = true;
+  ketov::SubMax subMax;
+  ketov::SumDup sumDup;
+  int value = 0;
+
+  while (std::cin >> value) {
+    if (value == 0) {
       break;
     }
-    if (n > max2) {
-      max2 = max1;
-      max1 = n;
-    }
-    if (v1 + v2 == n) {
-      cnt += 1;
-    }
-    v1 = v2;
-    v2 = n;
-    chk += 1;
+    subMax(value);
+    sumDup(value);
   }
 
-  if (!findzero) {
-    std::cerr << "Last should be zero\n";
-    return input_error_code;
+  if (!std::cin) {
+    std::cerr << "not a number\n";
+    return code1;
   }
 
-  if (chk == for_chk) {
-    std::cerr << "Too short\n";
-    return calcualtion_error;
+  try {
+    std::cout << subMax() << "\n";
+    std::cout << sumDup();
+  } catch (std::invalid_argument &e) {
+    std::cerr << e.what() << std::endl;
+    return code2;
   }
 
-  if (max1 > max2) {
-    std::cout << max2;
-  } else {
-    std::cout << max1;
-  }
-
-  std::cout << "\n";
-
-  std::cout << cnt << std::endl;
-
-  return 0;
+  return code0;
 }
